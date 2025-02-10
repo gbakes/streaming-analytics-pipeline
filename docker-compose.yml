@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: 
+    command:
       - "postgres"
       - "-c"
       - "wal_level=logical"
@@ -80,9 +80,33 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_LOGGER_WEBHOOK_ENABLE_CUSTOMER: "on"
+      MINIO_LOGGER_WEBHOOK_ENDPOINT_CUSTOMER: "http://host.docker.internal:7203/customer"
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    networks:
+      - kafka-network
+  akhq:
+    image: tchiotludo/akhq:0.24.0
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+         connections:
+           docker-kafka-server:
+             properties:
+               bootstrap.servers: "kafka:9092"
+             schema-registry:
+               url: "http://schema-registry:8081"
+               type: "confluent"
+             connect:
+               - name: "kafka-connect"
+                 url: "http://connect:8083"
+    ports:
+      - "${AKHQ_PORT:-8080}:8080"
+    depends_on:
+      - kafka
+      - connect
     networks:
       - kafka-network
 
@@ -94,3 +118,4 @@ volumes:
   postgres_data:
   minio_data:
   connect-data:
+
