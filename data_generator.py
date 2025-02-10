@@ -1,7 +1,8 @@
 import random
 import string
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import faker
 import psycopg2
 from psycopg2.extras import execute_values
