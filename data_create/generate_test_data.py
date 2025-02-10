@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-from data_generator import DataGenerator
 import os
-from dotenv import load_dotenv
-import psycopg2
-from psycopg2.extras import execute_values
 from itertools import zip_longest
+
+import psycopg2
+from data_generator import DataGenerator
+from dotenv import load_dotenv
+from psycopg2.extras import execute_values
 
 
 def main():

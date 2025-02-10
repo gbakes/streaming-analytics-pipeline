@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-import yaml
-import requests
-import json
 import argparse
-from minio import Minio
-from urllib3.exceptions import MaxRetryError
-import urllib3.exceptions
-from urllib3 import PoolManager, Timeout
+import json
 import os
+
+import requests
+import urllib3.exceptions
+import yaml
 from dotenv import load_dotenv
+from minio import Minio
+from urllib3 import PoolManager, Timeout
+from urllib3.exceptions import MaxRetryError
 
 
 class ConfigManager:
