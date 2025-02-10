@@ -159,6 +159,9 @@ podman compose exec kafka kafka-console-consumer \
 
 ## Minio config for event listening
 
+```bash
 mc config host list
 mc admin info retail-minio
+mc event list retail-minio/retail-data
 mc watch retail-minio/retail-data
+```

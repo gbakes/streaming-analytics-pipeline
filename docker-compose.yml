@@ -7,9 +7,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEBEZIUM_USER: ${DEBEZIUM_USER}
+      DEBEZIUM_PASSWORD: ${DEBEZIUM_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./setup.sh:/docker-entrypoint-initdb.d/setup.sh
     command:
       - "postgres"
       - "-c"
@@ -109,12 +112,52 @@ services:
       - connect
     networks:
       - kafka-network
+  dagster-daemon:
+    build:
+      context: ./dagster
+      dockerfile: Dockerfile
+    entrypoint: ["dagster-daemon", "run"]
+    environment:
+      DAGSTER_HOME: "/opt/dagster/dagster_home"
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_ENDPOINT: "minio:9000"
+    volumes:
+      - ./dagster:/opt/dagster/app
+      - dagster_home:/opt/dagster/dagster_home
+    networks:
+      - kafka-network
+    depends_on:
+      - minio
+
+  dagster-webserver:
+    build:
+      context: ./dagster
+      dockerfile: Dockerfile
+    entrypoint: ["dagit", "-h", "0.0.0.0", "-p", "3000"]
+    ports:
+      - "3000:3000"
+    environment:
+      DAGSTER_HOME: "/opt/dagster/dagster_home"
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_ENDPOINT: "minio:9000"
+    volumes:
+      - ./dagster:/opt/dagster/app
+      - dagster_home:/opt/dagster/dagster_home
+    networks:
+      - kafka-network
+    depends_on:
+      - minio
+      - dagster-daemon
+    restart: always
 
 networks:
   kafka-network:
     driver: bridge
 
 volumes:
+  dagster_home:
   postgres_data:
   minio_data:
   connect-data:
