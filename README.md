@@ -1,53 +1,152 @@
-# Overview
+# CDC to MinIO Project
 
-This is a project template for local testing of glue pipelines.
+This project sets up a Change Data Capture (CDC) pipeline from PostgreSQL to MinIO using Debezium and Kafka Connect.
+
+## Architecture
+
+```
+PostgreSQL -> Debezium -> Kafka -> S3 Sink Connector -> MinIO
+```
+
+## Components
+
+- PostgreSQL: Source database
+- Debezium: Change Data Capture
+- Apache Kafka: Message streaming
+- Kafka Connect: Connector framework
+- MinIO: S3-compatible object storage
+
+## Directory Structure
+
+- `configs/`: Contains connector and MinIO configurations
+- `scripts/`: Python scripts for managing connectors
+- `docs/`: Additional documentation
+- `.env.example`: Example environment variables
+- `docker-compose.yml`: Docker services configuration
+- `Dockerfile.connect`: Custom Kafka Connect image with connectors
 
 ## Setup
 
-### .env file
-
-Setup requires a .env file in the project directory with the following variables:
-
-* REPO_DIR
-* POSTGRES_HOST
-* POSTGRES_DB
-* POSTGRES_USER
-* POSTGRES_PASSWORD
-
-The POSTGRES_ prefixed variable can be named anything except for POSTGRES_HOST which needs to take the container name of the postgres service 'localdb'. The REPO_DIR variable needs to be the location of the project directory. You can start setting those up using:
-
-```{bash}
-touch .env
-echo "\nREPO_DIR=$(pwd)" >> .env
-echo "\POSTGRES_HOST=localdb" >> .env
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd cdc-minio-project
 ```
 
-### AWS Credentials + Glue
+2. Copy and configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configurations
+```
 
-The AWS Glue development environment is configured to run locally with AWS credentials. The service mounts your local AWS credentials directory (`~/.aws`) into the container at `/home/glue_user/.aws`. This allows the container to use your existing AWS profiles and credentials.
+3. Start the services:
+```bash
+docker-compose up -d
+```
 
-The environment is configured using the `AWS_PROFILE` variable from the local environment and sets the default region to `eu-west-1`. Access to the local workspace is provided through volume mounting `${REPO_DIR}` to `/home/glue_user/workspace/jupyter_workspace`, enabling direct access to your project files within the containerized environment. 
-The service exposes ports 8888 for Jupyter notebook access.
+4. Install Python dependencies:
+```bash
+pip install pyyaml requests minio python-dotenv
+```
 
-You'll need to copy the aws credentials (option 2) into the `~/.aws/credentials` file and make sure that the profile name matches the one set in the `AWS_PROFILE` variable.
+5. Apply connector configurations:
+```bash
+python scripts/manage_configs.py --action apply
+```
 
-### Postgres
-Environment variables for the database configuration are managed through a `.env` file described above. Connection to this database via PGAdmin4 can be done using the same credentials but using `localhost` as the hostname.
+## Data Organization
 
-The init.sql file is run on database creation to manage the working tables.
-
-
-## Running
-
-With the above set up you can now run:
-
-`podman compose -f docker-compose.yml -p data-local-testing up -d --build` 
-
-To create the containers. From there jupyter notebooks are accessible via `localhost:8888` and the `local_data_pipeline` container is accessible via devcontainers in vscode.
-
-In a devcontainer terminal run:
+The data in MinIO is organized by domain:
 
 ```
-python3 trading_datamart/sample.py 
-python3 trading_datamart/trading_datamart.py --GLUE_GAMEPLAY_DB data-dev-gameplay-pipeline-glue-catalog-db --GLUE_PLAY_TABLE gameplay_pipeline_glue_play_table_v2
+s3://my-bucket/
+├── customers/
+│   ├── raw/
+│   └── addresses/
+├── orders/
+│   ├── raw/
+│   └── items/
+└── products/
+    └── raw/
 ```
+
+## Configuration
+
+- Connector configurations are in `configs/connectors.yaml`
+- MinIO settings are in `configs/minio.yaml`
+- Environment variables are defined in `.env`
+
+## Usage
+
+1. Start/Stop Services:
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+```
+
+2. Manage Connectors:
+```bash
+# Apply configurations
+python scripts/manage_configs.py --action apply
+
+# Delete configurations
+python scripts/manage_configs.py --action delete
+```
+
+## Maintenance
+
+- Monitor connector status:
+```bash
+curl -X GET http://localhost:8084/connectors/<connector-name>/status | jq
+```
+
+- View logs:
+```bash
+docker-compose logs -f connect
+```
+
+## MINIO 
+
+`mc alias set myminio http://localhost:9000 minio minio123`
+`mc mb myminio/bucket1`
+
+Go to: http://localhost:9001 
+
+Username: minio
+Password: minio123
+
+## Debezium sink
+
+`curl http://localhost:8084/connectors` to give the connector names
+
+To see the state of the connector:
+`curl -X GET http://localhost:8084/connectors/postgres-connector/status | jq`
+
+`curl -X GET http://localhost:8084/connectors/status | jq`
+
+
+### db changes
+
+To make db changes you can execute:
+
+``` bash
+podman compose exec postgres psql -U postgres -d mydb -c "
+INSERT INTO customers (name, email) VALUES 
+    ('George Baker', 'gb@example.com');"
+```
+
+### Kafka chanes
+To view all the changes in the topic:
+```
+podman compose exec kafka kafka-console-consumer \
+    --bootstrap-server kafka:9092 \
+    --topic postgres-server.public.customers \
+    --from-beginning
+```
+
+## Managing configs:
+
+`python3 manage_configs.py --action apply`

@@ -1,0 +1,7 @@
+minio:
+  endpoint: "${MINIO_EXTERNAL_ENDPOINT}"
+  access_key: "${MINIO_ACCESS_KEY}"
+  secret_key: "${MINIO_SECRET_KEY}"
+  buckets:
+    - name: "${MINIO_BUCKET_NAME}"
+      policy: "read-write"
