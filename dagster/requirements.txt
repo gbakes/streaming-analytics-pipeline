@@ -1,0 +1,5 @@
+dagster
+dagit
+minio
+pandas
+python-dotenv
