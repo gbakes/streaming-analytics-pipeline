@@ -10,7 +10,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+<<<<<<< HEAD
     command:
+=======
+    command: 
+>>>>>>> main
       - "postgres"
       - "-c"
       - "wal_level=logical"
@@ -83,10 +87,6 @@ services:
       MINIO_LOGGER_WEBHOOK_ENABLE_CUSTOMER: "on"
       MINIO_LOGGER_WEBHOOK_ENDPOINT_CUSTOMER: "http://host.docker.internal:7203/customer"
     command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - kafka-network
   akhq:
     image: tchiotludo/akhq:0.24.0
     environment:
@@ -118,4 +118,3 @@ volumes:
   postgres_data:
   minio_data:
   connect-data:
-

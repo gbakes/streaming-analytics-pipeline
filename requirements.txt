@@ -8,3 +8,4 @@ urllib3==2.0.7
 confluent-kafka
 black
 flask
+python-dotenv
