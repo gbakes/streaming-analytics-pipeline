@@ -150,3 +150,9 @@ podman compose exec kafka kafka-console-consumer \
 ## Managing configs:
 
 `python3 manage_configs.py --action apply`
+
+
+## Minio config for event listening
+
+mc config host list 
+mc admin info retail-minio
